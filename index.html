@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Post-it App อวยพรปีใหม่ (PostitAppforNewYearsGreetings) 🤫</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Mali:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <!-- เพิ่ม Phosphor Icons สำหรับไอคอนสวยๆ -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+      body {
+        font-family: "Mali", cursive;
+      }
+
+      @keyframes popIn {
+        0% {
+          transform: scale(0.5) rotate(0deg);
+          opacity: 0;
+        }
+        80% {
+          transform: scale(1.1) rotate(5deg);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(1) rotate(var(--rotation));
+          opacity: 1;
+        }
+      }
+
+      .note-enter {
+        animation: popIn 0.5s ease-out forwards;
+      }
+      
+      /* Animation สำหรับ Offline Banner */
+      @keyframes slideUp {
+        from { transform: translateY(100%); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+      .slide-up {
+        animation: slideUp 0.3s ease-out forwards;
+      }
+    </style>
+  </head>
+  <body
+    class="bg-gray-800 min-h-screen text-gray-800 relative overflow-x-hidden selection:bg-pink-300 selection:text-pink-900"
+  >
+    <div
+      class="fixed inset-0 opacity-10 pointer-events-none"
+      style="
+        background-image: radial-gradient(#ffffff 2px, transparent 2px);
+        background-size: 30px 30px;
+      "
+    ></div>
+
+    <!-- Status Indicator (Offline/Online) -->
+    <div id="networkStatus" class="fixed bottom-4 right-4 z-[60] hidden transition-all duration-300 transform translate-y-20">
+        <div class="bg-gray-900 text-white px-4 py-2 rounded-full shadow-lg flex items-center gap-2 border border-white/20">
+            <i id="statusIcon" class="ph-fill ph-wifi-slash text-red-400 animate-pulse"></i>
+            <span id="statusText" class="text-sm font-bold">Offline Mode</span>
+        </div>
+    </div>
+
+    <!-- หน้า login -->
+    <div
+      id="loginScreen"
+      class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-gray-900/95 backdrop-blur-sm transition-opacity duration-500"
+    >
+      <h1 class="text-5xl font-bold text-white mb-8 drop-shadow-lg text-center leading-normal">
+        กรุณาล็อกอิน<br><span class="text-2xl text-yellow-300 font-normal">เพื่อเข้าสู่กำแพงความลับ</span>
+      </h1>
+      <button
+        onclick="signInWithGoogle()"
+        class="bg-white hover:bg-gray-100 text-gray-800 font-bold py-3 px-8 rounded-full shadow-lg transform hover:scale-105 transition flex items-center gap-3 text-xl group"
+      >
+        <img
+          src="https://www.svgrepo.com/show/475656/google-color.svg"
+          class="w-8 h-8 group-hover:rotate-12 transition-transform"
+          alt="Google Logo"
+        />
+        เข้าสู่ระบบด้วย Google
+      </button>
+      <p class="text-gray-400 mt-6 text-sm bg-black/20 px-4 py-2 rounded-lg">
+        🔒 ระบบ Offline First: ใช้งานได้แม้เน็ตหลุด ข้อมูลจะ Sync เมื่อต่อเน็ต
+      </p>
+    </div>
+
+    <div id="appContent" class="hidden opacity-0 transition-opacity duration-500">
+      <header class="text-center py-8 relative z-10">
+        <div class="absolute top-4 right-4 flex items-center gap-3 bg-gray-900/50 p-2 pl-4 rounded-full backdrop-blur-sm border border-white/10 z-50 hover:bg-gray-900/80 transition-colors">
+          <div class="text-right hidden md:block">
+            <p id="userDisplayName" class="text-white font-bold text-sm leading-tight"></p>
+            <p id="userEmailDisplay" class="text-gray-300 text-[10px] leading-tight"></p>
+          </div>
+          <img
+            id="userAvatar"
+            src=""
+            class="w-8 h-8 rounded-full border border-white shadow-sm bg-gray-600"
+          />
+          <button
+            onclick="logout()"
+            class="bg-red-500 hover:bg-red-600 text-white w-8 h-8 rounded-full shadow transition flex items-center justify-center ml-1"
+            title="ออกจากระบบ"
+          >
+            <i class="ph-bold ph-sign-out"></i>
+          </button>
+        </div>
+
+        <h1
+          class="text-4xl md:text-6xl font-bold text-white drop-shadow-lg transform -rotate-2 relative z-0"
+        >
+          📢 ขอบคุณที่ผ่านมา...วันหน้าพบกันใหม่
+        </h1>
+        <p class="text-gray-300 mt-2 text-lg relative z-0">
+           (เห็นชื่อเห็นเมล์นะจ๊ะ) 🤭
+        </p>
+      </header>
+
+      
+      <div class="max-w-xl mx-auto px-4 mb-10 relative z-10">
+        <div
+          class="bg-white/10 backdrop-blur-md p-6 rounded-2xl shadow-xl border border-white/20 transition-all hover:bg-white/15"
+        >
+          <textarea
+            id="messageInput"
+            rows="3"
+            class="w-full p-4 rounded-xl bg-white/90 focus:outline-none focus:ring-4 focus:ring-yellow-300 text-lg placeholder-gray-400 shadow-inner resize-none text-gray-800"
+            placeholder="พิมพ์อะไรก็ได้... บอกความในใจเราให้เขารู้?"
+          ></textarea>
+
+          <div class="flex justify-between items-center mt-4">
+            <div class="flex gap-2">
+              <button onclick="selectColor('yellow')" class="w-8 h-8 rounded-full bg-yellow-300 ring-2 ring-white ring-offset-2 ring-offset-gray-800 hover:scale-110 transition color-btn shadow-md" data-color="yellow"></button>
+              <button onclick="selectColor('pink')" class="w-8 h-8 rounded-full bg-pink-300 ring-transparent hover:ring-2 ring-white hover:scale-110 transition color-btn shadow-md" data-color="pink"></button>
+              <button onclick="selectColor('blue')" class="w-8 h-8 rounded-full bg-sky-300 ring-transparent hover:ring-2 ring-white hover:scale-110 transition color-btn shadow-md" data-color="blue"></button>
+              <button onclick="selectColor('green')" class="w-8 h-8 rounded-full bg-green-300 ring-transparent hover:ring-2 ring-white hover:scale-110 transition color-btn shadow-md" data-color="green"></button>
+            </div>
+            <button
+              onclick="postConfession()"
+              id="postBtn"
+              class="bg-yellow-400 hover:bg-yellow-500 text-gray-900 font-bold py-2 px-6 rounded-full shadow-lg transform active:scale-95 transition flex items-center gap-2"
+            >
+              <span>แปะเลย!</span>
+              <i class="ph-bold ph-paper-plane-tilt"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- แสดงผลตรงนี้ -->
+      <main class="max-w-7xl mx-auto px-4 pb-20 relative z-0">
+        <div
+          id="wallContainer"
+          class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 auto-rows-max"
+        >
+          <div
+            id="loading"
+            class="col-span-full text-center text-white py-10 animate-pulse flex flex-col items-center gap-4"
+          >
+            <i class="ph-duotone ph-spinner-gap text-4xl animate-spin"></i>
+            <span>กำลังโหลดความในใจ...</span>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
+      import {
+        getFirestore,
+        collection,
+        addDoc,
+        onSnapshot,
+        query,
+        serverTimestamp,
+        deleteDoc,
+        updateDoc,
+        doc,
+        enableIndexedDbPersistence // สำคัญมากสำหรับ Offline First
+      } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
+      import {
+        getAuth,
+        GoogleAuthProvider,
+        signInWithPopup,
+        signOut,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
+
+      // === 1. SETUP FIREBASE ===
+      const firebaseConfig = {
+
+      };
+
+      const app = initializeApp(firebaseConfig);
+      const db = getFirestore(app);
+      const auth = getAuth(app);
+      const APP_ID = "Gukkghu confession-wall"
+
+      // === 1.1 ENABLE OFFLINE PERSISTENCE ===
+      // ฟังก์ชันนี้จะทำให้ข้อมูลถูกเก็บลง Cache ในเครื่อง
+      // ต้องเรียกก่อนใช้ Firestore อื่นๆ (ถ้าทำได้)
+      const enableOffline = async () => {
+        try {
+            await enableIndexedDbPersistence(db);
+            console.log("Offline persistence enabled!");
+        } catch (err) {
+            if (err.code == 'failed-precondition') {
+                console.warn('เปิดไว้หลายแท็บ Persistence จะทำงานได้แค่แท็บเดียว');
+            } else if (err.code == 'unimplemented') {
+                console.warn('Browser นี้ไม่รองรับ Offline Persistence');
+            }
+        }
+      };
+      
+      // เรียกใช้ทันที
+      enableOffline();
+
+      // === 2. AUTHENTICATION LOGIC ===
+      const loginScreen = document.getElementById("loginScreen");
+      const appContent = document.getElementById("appContent");
+      let currentUser = null; 
+
+      window.signInWithGoogle = async () => {
+        const provider = new GoogleAuthProvider();
+        try {
+          await signInWithPopup(auth, provider);
+        } catch (error) {
+          console.error("Login Error:", error);
+          alert("ล็อกอินไม่สำเร็จ: " + error.message);
+        }
+      };
+
+      window.logout = async () => {
+        if(confirm("ต้องการออกจากระบบใช่หรือไม่?")) {
+            try {
+              await signOut(auth);
+              window.location.reload(); 
+            } catch (error) {
+              console.error("Logout Error:", error);
+              alert("เกิดข้อผิดพลาดในการออกจากระบบ");
+            }
+        }
+      };
+
+      onAuthStateChanged(auth, (user) => {
+        if (user) {
+          currentUser = user;
+          loginScreen.classList.add("hidden");
+          appContent.classList.remove("hidden");
+          
+          // Smooth fade in
+          requestAnimationFrame(() => {
+              appContent.classList.remove("opacity-0");
+          });
+          
+          document.getElementById("userDisplayName").innerText = user.displayName;
+          document.getElementById("userEmailDisplay").innerText = user.email;
+          document.getElementById("userAvatar").src = user.photoURL || "https://ui-avatars.com/api/?name=" + user.displayName;
+
+          startApp();
+        } else {
+          currentUser = null;
+          appContent.classList.add("hidden");
+          appContent.classList.add("opacity-0");
+          loginScreen.classList.remove("hidden");
+        }
+      });
+
+      // === 3. NETWORK STATUS HANDLING ===
+      const networkStatus = document.getElementById("networkStatus");
+      const statusIcon = document.getElementById("statusIcon");
+      const statusText = document.getElementById("statusText");
+
+      function updateNetworkStatus() {
+        const isOnline = navigator.onLine;
+        networkStatus.classList.remove("hidden", "translate-y-20");
+        networkStatus.classList.add("slide-up");
+
+        if (isOnline) {
+             // ถ้าออนไลน์ ซ่อนแบนเนอร์หลังจาก 3 วินาที
+             statusIcon.className = "ph-fill ph-wifi-high text-green-400";
+             statusText.innerText = "Online - Synced";
+             setTimeout(() => {
+                 networkStatus.classList.add("translate-y-20");
+             }, 3000);
+        } else {
+             // ถ้าออฟไลน์ แสดงแบนเนอร์ค้างไว้
+             networkStatus.classList.remove("translate-y-20");
+             statusIcon.className = "ph-fill ph-wifi-slash text-red-400 animate-pulse";
+             statusText.innerText = "Offline Mode - Saved to device";
+        }
+      }
+
+      window.addEventListener('online', updateNetworkStatus);
+      window.addEventListener('offline', updateNetworkStatus);
+      
+      // Check on load
+      if(!navigator.onLine) updateNetworkStatus();
+
+
+      // === 4. APP LOGIC ===
+      let selectedColor = "yellow";
+      const colorMap = {
+        yellow: "bg-yellow-200 text-yellow-900 rotate-1 shadow-yellow-500/20",
+        pink: "bg-pink-200 text-pink-900 -rotate-1 shadow-pink-500/20",
+        blue: "bg-sky-200 text-sky-900 rotate-2 shadow-sky-500/20",
+        green: "bg-green-200 text-green-900 -rotate-2 shadow-green-500/20",
+      };
+
+      function startApp() {
+        const wallCollection = collection(
+          db,
+          "artifacts",
+          APP_ID,
+          "public",
+          "data",
+          "confessions"
+        );
+
+        const q = query(wallCollection);
+        const wallContainer = document.getElementById("wallContainer");
+        const loading = document.getElementById("loading");
+        let notesData = [];
+
+        // onSnapshot รองรับ Offline อัตโนมัติ (จะยิง event ทันทีที่มีการเปลี่ยนแปลงใน local cache)
+        onSnapshot(q, (snapshot) => {
+            loading.style.display = "none";
+            notesData = []; 
+
+            // ตรวจสอบว่าข้อมูลมาจาก Cache หรือ Server (เพื่อ Debug หรือแสดงสถานะ ถ้าต้องการ)
+            // const source = snapshot.metadata.fromCache ? "local cache" : "server";
+            // console.log("Data came from " + source);
+
+            snapshot.forEach((doc) => {
+              notesData.push({ id: doc.id, ...doc.data() });
+            });
+
+            // Client-side sorting (Timestamp จะเป็น null ถ้าพึ่ง create ในโหมด offline, ต้อง handle)
+            notesData.sort((a, b) => {
+              const t1 = a.timestamp ? a.timestamp.seconds : Date.now() / 1000;
+              const t2 = b.timestamp ? b.timestamp.seconds : Date.now() / 1000;
+              return t2 - t1;
+            });
+
+            renderNotes(notesData);
+          },
+          (error) => {
+            console.error("Snapshot error:", error);
+            // แสดง Error ใน UI แบบเป็นมิตร
+            loading.innerHTML = `<span class="text-red-300">โหลดข้อมูลไม่สำเร็จ (คุณอาจไม่มีสิทธิ์หรือระบบมีปัญหา)</span>`;
+          }
+        );
+
+        function renderNotes(notes) {
+          wallContainer.innerHTML = "";
+          
+          if (notes.length === 0) {
+              wallContainer.innerHTML = `
+                <div class="col-span-full text-center text-white/50 py-10 flex flex-col items-center">
+                    <i class="ph-duotone ph-pencil-slash text-6xl mb-4 opacity-50"></i>
+                    <span class="text-xl font-light">ยังไม่มีใครระบายอะไรเลย... เริ่มคนแรกสิ!</span>
+                </div>`;
+              return;
+          }
+
+          notes.forEach((data) => {
+            createNoteElement(data);
+          });
+        }
+
+        function createNoteElement(data) {
+          const noteId = data.id;
+          // ถ้า offline timestamp อาจจะเป็น null ชั่วคราว ให้ใช้เวลาปัจจุบัน
+          const date = data.timestamp ? data.timestamp.toDate() : new Date();
+          const div = document.createElement("div");
+          div.id = `note-${noteId}`;
+          const colorClass = colorMap[data.color] || colorMap["yellow"];
+
+          div.className = `group p-6 rounded-lg shadow-md hover:shadow-2xl transition-all duration-300 cursor-default note-enter relative min-h-[200px] flex flex-col justify-between ${colorClass}`;
+
+          const rot = data.rotation || Math.random() * 6 - 3;
+          div.style.setProperty("--rotation", `${rot}deg`);
+
+          const isOwner = currentUser && data.uid === currentUser.uid;
+          
+          const buttonsHtml = isOwner ? `
+            <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                <button onclick="window.editConfession('${noteId}')" class="bg-white/50 hover:bg-white p-1 rounded-full text-sm w-8 h-8 flex items-center justify-center shadow-sm text-gray-700" title="แก้ไข"><i class="ph-bold ph-pencil-simple"></i></button>
+                <button onclick="window.deleteConfession('${noteId}')" class="bg-white/50 hover:bg-red-500 hover:text-white p-1 rounded-full text-sm w-8 h-8 flex items-center justify-center shadow-sm text-gray-700 transition-colors" title="ลบ"><i class="ph-bold ph-trash"></i></button>
+            </div>
+          ` : `<div></div>`;
+
+          const authorEmail = data.authorEmail || "Anonymous";
+          const authorName = data.authorName || "นิรนาม";
+
+          // เช็คว่าโพสต์นี้ยัง Pending (ยังไม่ซิงค์) หรือไม่ (ใช้สีจางๆ บอกสถานะก็ได้)
+          const isPending = data.timestamp === null; 
+          const pendingIcon = isPending ? `<i class="ph-bold ph-cloud-arrow-up animate-pulse text-gray-500" title="รอการอัปโหลด..."></i>` : '';
+
+          div.innerHTML = `
+                <!-- หมุด -->
+                <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-4 h-4 rounded-full bg-red-500 shadow-sm z-10 border border-red-700"></div>
+                <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-white/50 rounded-full z-20"></div>
+
+                <!-- ข้อความ -->
+                <div class="mb-4">
+                     <p class="note-text text-xl font-medium leading-relaxed break-words whitespace-pre-wrap">${data.text}</p>
+                </div>
+                
+                <!-- Footer ของโน้ต -->
+                <div class="mt-auto pt-3 border-t border-black/10">
+                    <div class="flex items-center gap-2 mb-2 opacity-80">
+                        <div class="w-8 h-8 rounded-full bg-black/10 flex items-center justify-center text-sm overflow-hidden font-bold text-black/50 uppercase border border-white/30">
+                             ${authorName.charAt(0)}
+                        </div>
+                        <div class="flex flex-col leading-none overflow-hidden">
+                            <span class="text-sm font-bold truncate">${authorName}</span>
+                            <span class="text-[10px] opacity-70 truncate">${authorEmail}</span>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-between items-center h-8">
+                        ${buttonsHtml}
+                        <div class="flex items-center gap-1 text-xs font-bold opacity-60">
+                            ${pendingIcon}
+                            <span>${timeAgo(date)}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+          wallContainer.appendChild(div);
+        }
+
+        // --- CREATE ---
+        window.postConfession = async () => {
+          if (!currentUser) return alert("กรุณาล็อกอินก่อนครับ");
+
+          const input = document.getElementById("messageInput");
+          const btn = document.getElementById("postBtn");
+          const text = input.value.trim();
+          if (!text) {
+            input.focus();
+            input.classList.add('ring-red-400');
+            setTimeout(() => input.classList.remove('ring-red-400'), 1000);
+            return;
+          }
+
+          // [FIX] Reset UI ทันที (Optimistic UI) ไม่ต้องรอ await
+          // เพื่อให้ Offline Mode ทำงานได้ลื่นไหลเหมือนมีเน็ต
+          input.value = "";
+          
+          const originalBtnContent = btn.innerHTML;
+          btn.disabled = true;
+          btn.innerHTML = `<i class="ph-bold ph-check"></i> แปะแล้ว!`;
+
+          try {
+            // ไม่ใช้ await กับ addDoc เพื่อป้องกันการค้างตอน offline
+            // ใช้ .catch ดัก error ทีหลังแทน
+            addDoc(wallCollection, {
+              text: text,
+              color: selectedColor,
+              timestamp: serverTimestamp(), // ถ้า Offline ค่านี้จะเป็น null ชั่วคราวใน local snapshot
+              rotation: Math.random() * 6 - 3,
+              uid: currentUser.uid,
+              authorEmail: currentUser.email,
+              authorName: currentUser.displayName
+            }).catch((error) => {
+                console.error("Write error:", error);
+                alert("เกิดข้อผิดพลาดในการบันทึก: " + error.message);
+            });
+            
+          } catch (error) {
+            console.error(error);
+            alert("เกิดข้อผิดพลาด: " + error.message);
+          } finally {
+             // คืนค่าปุ่มทันที
+             setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = originalBtnContent;
+             }, 800);
+          }
+        };
+
+        // --- UPDATE ---
+        window.editConfession = async (id) => {
+            // ดึง text จาก DOM มาเป็น default value
+            const currentTextElement = document.querySelector(`#note-${id} .note-text`);
+            if(!currentTextElement) return;
+            
+            const currentText = currentTextElement.innerText;
+            const newText = prompt("แก้ไขข้อความ:", currentText);
+
+            if (newText !== null && newText.trim() !== "") {
+                try {
+                    const noteRef = doc(db, "artifacts", APP_ID, "public", "data", "confessions", id);
+                    // ไม่ await เพื่อไม่ให้ค้างตอน offline เช่นกัน
+                    updateDoc(noteRef, { text: newText }).catch(err => console.error(err));
+                } catch (error) {
+                    console.error("Error updating: ", error);
+                    alert("แก้ไขไม่ได้ (คุณอาจไม่ใช่เจ้าของโพสต์หรือมีปัญหาเครือข่าย)");
+                }
+            }
+        };
+
+        // --- DELETE ---
+        window.deleteConfession = async (id) => {
+            if (confirm("จะฉีกโน้ตนี้ทิ้งจริงๆ หรอ?")) {
+                try {
+                    const noteRef = doc(db, "artifacts", APP_ID, "public", "data", "confessions", id);
+                    // ไม่ await เพื่อไม่ให้ค้างตอน offline
+                    deleteDoc(noteRef).catch(err => console.error(err));
+                } catch (error) {
+                    console.error("Error deleting: ", error);
+                    alert("ลบไม่ได้ (คุณอาจไม่ใช่เจ้าของโพสต์)");
+                }
+            }
+        };
+      }
+
+      // --- UTILS ---
+      window.selectColor = (color) => {
+        selectedColor = color;
+        document.querySelectorAll(".color-btn").forEach((btn) => {
+          btn.classList.remove("ring-2", "ring-white", "ring-offset-2", "ring-offset-gray-800");
+          btn.classList.add("ring-transparent");
+          // Animation เล็กน้อยเมื่อกด
+          btn.style.transform = "scale(1)";
+        });
+        const target = event.currentTarget; // ใช้ currentTarget เพื่อความชัวร์
+        target.classList.remove("ring-transparent");
+        target.classList.add("ring-2", "ring-white", "ring-offset-2", "ring-offset-gray-800");
+        target.style.transform = "scale(1.1)";
+      };
+
+      function timeAgo(date) {
+        const seconds = Math.floor((new Date() - date) / 1000);
+        let interval = seconds / 31536000;
+        if (interval > 1) return Math.floor(interval) + " ปีที่แล้ว";
+        interval = seconds / 2592000;
+        if (interval > 1) return Math.floor(interval) + " เดือนที่แล้ว";
+        interval = seconds / 86400;
+        if (interval > 1) return Math.floor(interval) + " วันที่แล้ว";
+        interval = seconds / 3600;
+        if (interval > 1) return Math.floor(interval) + " ชม.ที่แล้ว";
+        interval = seconds / 60;
+        if (interval > 1) return Math.floor(interval) + " นาทีก่อน";
+        return "เมื่อกี้";
+      }
+    </script>
+  </body>
+</html>
